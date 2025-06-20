@@ -14,8 +14,14 @@ export interface HealthResponse {
   openaiConfigured: boolean;
 }
 
-// Use the same protocol as the frontend to avoid mixed content issues
+// Use environment variable for API URL or fallback to localhost
 const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    return `${envUrl}/api`;
+  }
+  
+  // Fallback to localhost for development
   const protocol = window.location.protocol;
   return `${protocol}//localhost:3001/api`;
 };
