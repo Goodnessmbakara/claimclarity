@@ -88,7 +88,7 @@ function createClaimData(claimDetails) {
 
 // Helper function to extract claim ID from message
 function extractClaimId(message) {
-  const claimIdPattern = /CLAIM-\d{3,6}/i;
+  const claimIdPattern = /CLAIM-\d+/i;
   const match = message.match(claimIdPattern);
   return match ? match[0].toUpperCase() : null;
 }
@@ -211,7 +211,7 @@ app.post('/api/chat', async (req, res) => {
     
     if (claimId) {
       // Validate claim ID format
-      const claimIdPattern = /^CLAIM-\d{3,6}$/i;
+      const claimIdPattern = /^CLAIM-\d+$/i;
       if (!claimIdPattern.test(claimId)) {
         const aiResponse = await generateAIResponse(message, null, null, conversationHistory);
         return res.json({
