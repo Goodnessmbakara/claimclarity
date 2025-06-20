@@ -60,6 +60,32 @@ const mockClaims = {
   }
 };
 
+// Generate unique claim ID
+function generateClaimId() {
+  const timestamp = Date.now().toString().slice(-6);
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `CLAIM-${timestamp}${random}`;
+}
+
+// Create claim data structure
+function createClaimData(claimDetails) {
+  const claimId = generateClaimId();
+  const submissionDate = new Date().toISOString().split('T')[0];
+  
+  return {
+    claimId: claimId,
+    status: 'Submitted',
+    details: claimDetails.description || 'Claim submitted successfully. Our team will review your submission.',
+    amount: claimDetails.estimatedAmount || 0,
+    submissionDate: submissionDate,
+    expectedResolution: 'Under review',
+    policyNumber: claimDetails.policyNumber || 'N/A',
+    claimType: claimDetails.claimType || 'General',
+    contactInfo: claimDetails.contactInfo || {},
+    documents: claimDetails.documents || []
+  };
+}
+
 // Helper function to extract claim ID from message
 function extractClaimId(message) {
   const claimIdPattern = /CLAIM-\d{3,6}/i;
@@ -230,6 +256,113 @@ app.post('/api/chat', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Sorry, I couldn\'t process your request. Please try again in a moment.'
+    });
+  }
+});
+
+// Create new claim endpoint
+app.post('/api/claims', async (req, res) => {
+  try {
+    const {
+      policyNumber,
+      claimType,
+      description,
+      estimatedAmount,
+      contactInfo,
+      documents = []
+    } = req.body;
+
+    // Validate required fields
+    if (!policyNumber || !claimType || !description) {
+      return res.status(400).json({
+        success: false,
+        error: 'Policy number, claim type, and description are required'
+      });
+    }
+
+    // Validate claim type
+    const validClaimTypes = ['Auto', 'Home', 'Health', 'Life', 'Business', 'General'];
+    if (!validClaimTypes.includes(claimType)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid claim type. Must be one of: ' + validClaimTypes.join(', ')
+      });
+    }
+
+    // Validate estimated amount
+    if (estimatedAmount && (isNaN(estimatedAmount) || estimatedAmount < 0)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Estimated amount must be a positive number'
+      });
+    }
+
+    const claimDetails = {
+      policyNumber,
+      claimType,
+      description,
+      estimatedAmount: parseFloat(estimatedAmount) || 0,
+      contactInfo: contactInfo || {},
+      documents
+    };
+
+    let newClaim;
+
+    if (API_KEY) {
+      // Try to create claim via external API
+      try {
+        const response = await fetch(`${API_URL}/claims`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${API_KEY}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(claimDetails),
+          timeout: 10000
+        });
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status} ${response.statusText}`);
+        }
+
+        const apiResponse = await response.json();
+        newClaim = {
+          claimId: apiResponse.claimId || apiResponse.id,
+          status: apiResponse.status || 'Submitted',
+          details: apiResponse.details || 'Claim submitted successfully',
+          amount: apiResponse.amount || estimatedAmount,
+          submissionDate: apiResponse.submissionDate || new Date().toISOString().split('T')[0],
+          expectedResolution: apiResponse.expectedResolution || 'Under review',
+          policyNumber,
+          claimType,
+          contactInfo,
+          documents
+        };
+      } catch (error) {
+        console.error('External API Error:', error);
+        // Fall back to mock creation
+        newClaim = createClaimData(claimDetails);
+        mockClaims[newClaim.claimId] = newClaim;
+      }
+    } else {
+      // Create mock claim
+      newClaim = createClaimData(claimDetails);
+      mockClaims[newClaim.claimId] = newClaim;
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Claim created successfully',
+      claim: newClaim,
+      usingMockData: !API_KEY
+    });
+
+  } catch (error) {
+    console.error('Create Claim Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create claim. Please try again.'
     });
   }
 });

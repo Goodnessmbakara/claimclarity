@@ -97,3 +97,46 @@ export async function checkServerHealth(): Promise<HealthResponse> {
     };
   }
 }
+
+export async function createClaim(claimData: {
+  policyNumber: string;
+  claimType: string;
+  description: string;
+  estimatedAmount: string;
+  contactInfo: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+}): Promise<{ success: boolean; claim?: any; message?: string; error?: string }> {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/claims`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(claimData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to create claim'
+      };
+    }
+
+    return {
+      success: true,
+      claim: data.claim,
+      message: data.message
+    };
+  } catch (error) {
+    console.error('Error creating claim:', error);
+    return {
+      success: false,
+      error: 'Network error. Please try again.'
+    };
+  }
+}

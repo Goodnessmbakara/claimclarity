@@ -6,6 +6,7 @@ import {
   Database,
   RotateCcw,
   Sparkles,
+  Plus,
 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
@@ -16,7 +17,11 @@ import {
   clearConversation,
 } from "../services/chatApi";
 
-export default function ChatInterface() {
+interface ChatInterfaceProps {
+  onCreateClaim?: () => void;
+}
+
+export default function ChatInterface({ onCreateClaim }: ChatInterfaceProps) {
   const [sessionId] = useState(
     () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   );
@@ -24,7 +29,7 @@ export default function ChatInterface() {
     {
       id: "1",
       content:
-        "Welcome! I can help you check your claim status. Just enter your claim ID.",
+        "Welcome! I can help you check your claim status or create a new claim. Just enter your claim ID to check status, or use the 'Create Claim' button to submit a new claim.",
       sender: "assistant",
       timestamp: new Date(),
     },
@@ -137,6 +142,17 @@ export default function ChatInterface() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Create Claim Button */}
+              {onCreateClaim && (
+                <button
+                  onClick={onCreateClaim}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Claim</span>
+                </button>
+              )}
+
               {/* Clear Chat Button */}
               <button
                 onClick={handleClearChat}

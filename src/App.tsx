@@ -1,15 +1,29 @@
-import React, { useState } from 'react';
-import ChatInterface from './components/ChatInterface';
-import LandingPage from './components/LandingPage';
+import React, { useState } from "react";
+import ChatInterface from "./components/ChatInterface";
+import LandingPage from "./components/LandingPage";
+import ClaimCreationPage from "./components/ClaimCreationPage";
+
+type AppView = "landing" | "chat" | "create-claim";
 
 function App() {
-  const [showChat, setShowChat] = useState(false);
+  const [currentView, setCurrentView] = useState<AppView>("landing");
 
-  return showChat ? (
-    <ChatInterface />
-  ) : (
-    <LandingPage onGetStarted={() => setShowChat(true)} />
-  );
+  const renderView = () => {
+    switch (currentView) {
+      case "landing":
+        return <LandingPage onGetStarted={() => setCurrentView("chat")} />;
+      case "chat":
+        return (
+          <ChatInterface onCreateClaim={() => setCurrentView("create-claim")} />
+        );
+      case "create-claim":
+        return <ClaimCreationPage onBack={() => setCurrentView("chat")} />;
+      default:
+        return <LandingPage onGetStarted={() => setCurrentView("chat")} />;
+    }
+  };
+
+  return renderView();
 }
 
 export default App;
